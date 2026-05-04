@@ -1,0 +1,15 @@
+/*
+Theme Name: Prompt Headless
+Theme URI: https://github.com/seu-usuario/engenharia-de-prompts
+Author: Engenharia de Prompts
+Author URI: #
+Description: Tema minimalista headless para o repositório de Engenharia de Prompts. Não renderiza frontend — atua exclusivamente como provedor de REST API via WordPress.
+Version: 1.0.0
+Requires at least: 6.4
+Tested up to: 6.7
+Requires PHP: 8.2
+License: GNU General Public License v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: prompt-headless
+Tags: headless, rest-api, custom-post-type
+*/
