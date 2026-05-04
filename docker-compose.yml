@@ -1,0 +1,68 @@
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: prompts_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - prompts_net
+
+  wordpress:
+    image: wordpress:latest
+    container_name: prompts_wordpress
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "8090:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_DEBUG: '1'
+    volumes:
+      - wp_data:/var/www/html
+      # Monta o tema customizado diretamente no container
+      - ./wordpress/themes/prompt-headless:/var/www/html/wp-content/themes/prompt-headless
+      # Monta o plugin de campos customizados
+      - ./wordpress/plugins/prompt-rest-fields:/var/www/html/wp-content/plugins/prompt-rest-fields
+    networks:
+      - prompts_net
+
+  # WP-CLI para setup inicial via linha de comando
+  wpcli:
+    image: wordpress:cli
+    container_name: prompts_wpcli
+    depends_on:
+      - db
+      - wordpress
+    volumes:
+      - wp_data:/var/www/html
+      - ./wordpress/themes/prompt-headless:/var/www/html/wp-content/themes/prompt-headless
+      - ./wordpress/plugins/prompt-rest-fields:/var/www/html/wp-content/plugins/prompt-rest-fields
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    networks:
+      - prompts_net
+    # Mantém o container ativo para comandos manuais
+    entrypoint: tail -f /dev/null
+
+volumes:
+  db_data:
+  wp_data:
+
+networks:
+  prompts_net:
+    driver: bridge
