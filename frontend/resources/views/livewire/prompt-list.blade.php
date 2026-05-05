@@ -128,8 +128,8 @@
 
                     {{-- Card: controlado por x-show para busca textual client-side --}}
                     <div
-                        @click="selectedPrompt = { id: {{ $id }}, title: '{{ addslashes($titulo) }}', structure: `{{ addslashes($estrutura) }}`, example: `{{ addslashes($exemplo) }}` }; document.body.style.overflow = 'hidden'"
-                        x-show="search === '' || '{{ strtolower($titulo) }}'.includes(search.toLowerCase()) || '{{ strtolower($estrutura) }}'.includes(search.toLowerCase())"
+                        @click='selectedPrompt = { id: {{ $id }}, title: {!! json_encode($titulo) !!}, structure: {!! json_encode($estrutura) !!}, example: {!! json_encode($exemplo) !!} }; $wire.loadComments({{ $id }}); document.body.style.overflow = "hidden"'
+                        x-show="search === '' || {!! json_encode(strtolower($titulo)) !!}.includes(search.toLowerCase()) || {!! json_encode(strtolower($estrutura)) !!}.includes(search.toLowerCase())"
                         x-transition:enter="transition ease-out duration-200"
                         x-transition:enter-start="opacity-0 translate-y-1"
                         x-transition:enter-end="opacity-100 translate-y-0"
@@ -158,7 +158,7 @@
 
                             {{-- Botão Copiar (Alpine.js — sem roundtrip ao servidor) --}}
                             <button
-                                @click.stop="copyPrompt({{ $id }}, `{{ addslashes($estrutura) }}`)"
+                                @click.stop='copyPrompt({{ $id }}, {!! json_encode($estrutura) !!})'
                                 class="shrink-0 text-xs border px-2 py-1 transition-all duration-200"
                                 :class="copied === {{ $id }}
                                     ? 'border-emerald-500 text-emerald-400 bg-emerald-950/40'
@@ -288,6 +288,67 @@
                     <div class="bg-slate-900/30 p-4 rounded border border-slate-800/30 border-l-4 border-l-emerald-600/50">
                         <pre class="text-emerald-500/80 leading-relaxed whitespace-pre-wrap break-words font-mono text-xs" x-text="selectedPrompt ? selectedPrompt.example : ''"></pre>
                     </div>
+                </div>
+
+                {{-- Seção de Comentários --}}
+                <div x-show="selectedPrompt" class="mt-8 pt-6 border-t border-slate-800">
+                    <h3 class="text-slate-500 uppercase tracking-wider text-xs mb-4">
+                        Comentários (<span x-text="$wire.comments.length"></span>)
+                    </h3>
+                    
+                    {{-- Loading State para comentários --}}
+                    <div wire:loading wire:target="loadComments" class="text-xs text-slate-500 flex items-center gap-2 mb-4">
+                        <span class="inline-block w-3 h-3 border border-emerald-500 border-t-transparent animate-spin rounded-full"></span>
+                        Carregando comentários...
+                    </div>
+
+                    {{-- Lista de Comentários --}}
+                    <div wire:loading.remove wire:target="loadComments" class="space-y-4">
+                        @if(empty($comments))
+                            <p class="text-slate-600 text-xs italic">Nenhum comentário ainda. Seja o primeiro a comentar!</p>
+                        @else
+                            @foreach($comments as $comment)
+                                <div class="bg-slate-900/40 p-4 border border-slate-800/50 rounded flex flex-col gap-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-emerald-400 font-bold text-xs">{{ $comment['author_name'] ?? 'Anônimo' }}</span>
+                                        <span class="text-slate-600 text-[10px]">{{ isset($comment['date']) ? \Carbon\Carbon::parse($comment['date'])->diffForHumans() : '' }}</span>
+                                    </div>
+                                    <div class="text-slate-300 text-xs leading-relaxed whitespace-pre-wrap break-words">
+                                        {!! strip_tags($comment['content']['rendered'] ?? '') !!}
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endif
+                    </div>
+
+                    {{-- Formulário de Comentário --}}
+                    @auth
+                        <div class="mt-6 flex flex-col gap-2">
+                            <textarea 
+                                wire:model="newComment" 
+                                required 
+                                rows="3"
+                                class="w-full bg-slate-900 border border-slate-700 text-slate-300 text-sm p-3 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-colors" 
+                                placeholder="Deixe seu comentário sobre este prompt..."
+                            ></textarea>
+                            <button 
+                                wire:click="submitComment(selectedPrompt.id)"
+                                wire:loading.attr="disabled"
+                                wire:target="submitComment"
+                                class="self-end bg-emerald-900/50 text-emerald-400 border border-emerald-800 px-6 py-2 text-xs hover:bg-emerald-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono"
+                            >
+                                <span wire:loading.remove wire:target="submitComment">[ Enviar Comentário ]</span>
+                                <span wire:loading wire:target="submitComment">[ Enviando... ]</span>
+                            </button>
+                        </div>
+                    @else
+                        <div class="mt-6 p-4 bg-slate-900/30 border border-slate-800 text-center rounded">
+                            <p class="text-slate-500 text-xs">Você precisa estar autenticado para comentar.</p>
+                            <a href="{{ route('login') }}" class="text-emerald-500 hover:text-emerald-400 text-xs mt-2 inline-block font-mono border-b border-emerald-500/30">
+                                [ auth --login ]
+                            </a>
+                        </div>
+                    @endauth
                 </div>
 
             </div>

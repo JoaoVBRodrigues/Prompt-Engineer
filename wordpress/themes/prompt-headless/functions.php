@@ -79,7 +79,7 @@ add_action('init', function (): void {
         'hierarchical'        => false,
         'menu_position'       => 5,
         'menu_icon'           => 'dashicons-editor-code',
-        'supports'            => ['title', 'editor', 'author', 'thumbnail', 'excerpt', 'revisions'],
+        'supports'            => ['title', 'editor', 'author', 'thumbnail', 'excerpt', 'revisions', 'comments'],
         // Enable full REST API support
         'show_in_rest'        => true,
         'rest_base'           => 'prompt',
@@ -216,3 +216,43 @@ add_filter('rest_prepare_prompt', function (WP_REST_Response $response, WP_Post 
 // ─── Sanitization: remove scripts from content returned by the API ───────────────
 
 add_filter('the_content', 'wp_kses_post');
+
+// ─── Custom REST Endpoint: Post Comment ───────────────────────────────────────
+
+add_action('rest_api_init', function (): void {
+    register_rest_route('prompt/v1', '/comment', [
+        'methods'             => 'POST',
+        'callback'            => function (\WP_REST_Request $request) {
+            $post_id      = (int) $request->get_param('post_id');
+            $content      = sanitize_textarea_field($request->get_param('content'));
+            $author_name  = sanitize_text_field($request->get_param('author_name'));
+            $author_email = sanitize_email($request->get_param('author_email'));
+
+            if (!$post_id || !$content || !$author_name || !$author_email) {
+                return new \WP_Error('missing_data', 'Missing required fields', ['status' => 400]);
+            }
+
+            $comment_data = [
+                'comment_post_ID'      => $post_id,
+                'comment_author'       => $author_name,
+                'comment_author_email' => $author_email,
+                'comment_content'      => $content,
+                'comment_type'         => 'comment',
+                'comment_parent'       => 0,
+                'comment_approved'     => 1, // Auto-approve comments coming from the Laravel backend
+            ];
+
+            $comment_id = wp_insert_comment($comment_data);
+
+            if (!$comment_id) {
+                return new \WP_Error('insert_failed', 'Failed to insert comment', ['status' => 500]);
+            }
+
+            return rest_ensure_response(['success' => true, 'comment_id' => $comment_id]);
+        },
+        'permission_callback' => function () {
+            // The Laravel backend authenticates via Basic Auth as Admin, so this is safe.
+            return current_user_can('edit_posts');
+        },
+    ]);
+});

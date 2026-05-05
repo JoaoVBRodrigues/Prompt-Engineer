@@ -39,6 +39,13 @@ final class PromptList extends Component
     public string $engine = '';
 
     /**
+     * Holds comments for the currently opened prompt modal.
+     */
+    public array $comments = [];
+    public bool $loadingComments = false;
+    public string $newComment = '';
+
+    /**
      * Returns the filtered prompts via Service.
      * The #[Computed] annotation caches the request (avoids multiple calls per render).
      *
@@ -82,6 +89,40 @@ final class PromptList extends Component
     {
         $this->tecnica = '';
         $this->engine = '';
+    }
+
+    /**
+     * Loads comments for a specific prompt ID.
+     */
+    public function loadComments(int $postId): void
+    {
+        $this->loadingComments = true;
+        $this->comments = app(WordPressPromptService::class)->getComments($postId);
+        $this->loadingComments = false;
+    }
+
+    /**
+     * Submits a new comment for a specific prompt ID.
+     */
+    public function submitComment(int $postId): void
+    {
+        if (!auth()->check() || empty(trim($this->newComment))) {
+            return;
+        }
+
+        $user = auth()->user();
+        
+        $success = app(WordPressPromptService::class)->postComment(
+            $postId, 
+            $user->name, 
+            $user->email, 
+            trim($this->newComment)
+        );
+
+        if ($success) {
+            $this->newComment = ''; // Limpa o campo
+            $this->loadComments($postId);
+        }
     }
 
     public function render(): \Illuminate\View\View

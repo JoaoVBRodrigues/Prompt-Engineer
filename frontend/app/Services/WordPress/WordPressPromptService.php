@@ -224,6 +224,71 @@ final class WordPressPromptService
         }
     }
 
+    // ─── Comments API ────────────────────────────────────────────────────────
+
+    /**
+     * Fetches approved comments for a specific prompt.
+     *
+     * @param int $postId
+     * @return array<int, array<string, mixed>>
+     */
+    public function getComments(int $postId): array
+    {
+        try {
+            $response = Http::timeout(10)
+                ->acceptJson()
+                ->get("{$this->baseUrl}/wp/v2/comments", [
+                    'post'   => $postId,
+                    'status' => 'approve',
+                    'order'  => 'asc', // oldest first
+                ]);
+
+            $response->throw();
+
+            return $response->json() ?? [];
+        } catch (ConnectionException|RequestException $e) {
+            Log::error("[WordPressPromptService] Failed to fetch comments for post ID {$postId}.", [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Posts a new comment to a prompt using the custom REST endpoint.
+     *
+     * @param int $postId
+     * @param string $authorName
+     * @param string $authorEmail
+     * @param string $content
+     * @return bool
+     */
+    public function postComment(int $postId, string $authorName, string $authorEmail, string $content): bool
+    {
+        try {
+            $response = Http::timeout(10)
+                ->withBasicAuth($this->apiUser, $this->apiPassword)
+                ->acceptJson()
+                ->post("{$this->baseUrl}/prompt/v1/comment", [
+                    'post_id'      => $postId,
+                    'author_name'  => $authorName,
+                    'author_email' => $authorEmail,
+                    'content'      => $content,
+                ]);
+
+            $response->throw();
+
+            return true;
+        } catch (ConnectionException|RequestException $e) {
+            Log::error("[WordPressPromptService] Failed to post comment to post ID {$postId}.", [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     // ─── Private fetch methods ────────────────────────────────────────────
 
     /**
