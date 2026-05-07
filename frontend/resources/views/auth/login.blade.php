@@ -1,4 +1,5 @@
 <x-guest-layout>
+    <x-slot:tabFile>login_prompt.sh</x-slot:tabFile>
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 

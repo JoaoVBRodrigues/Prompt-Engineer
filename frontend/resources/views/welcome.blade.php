@@ -55,6 +55,9 @@
                 <a href="{{ route('login') }}" class="w-full sm:w-auto px-8 py-3 bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors">
                     [ auth login ]
                 </a>
+                <a href="{{ route('register') }}" class="w-full sm:w-auto px-8 py-3 bg-emerald-950 border border-emerald-900 text-emerald-400 hover:bg-emerald-900 hover:text-emerald-300 transition-colors">
+                    [ auth register ]
+                </a>
             @endauth
         </div>
     </div>

@@ -33,7 +33,7 @@
                     <div class="w-3 h-3 rounded-full bg-red-500"></div>
                     <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
                     <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-                    <span class="ml-2 text-xs text-slate-500">login_prompt.sh</span>
+                    <span class="ml-2 text-xs text-slate-500">{{ $tabFile ?? 'auth_prompt.sh' }}</span>
                 </div>
                 <div class="p-6 text-sm text-slate-300">
                     {{ $slot }}
